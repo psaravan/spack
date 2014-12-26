@@ -35,8 +35,8 @@ class Hypre(Package):
        and elsewhere to study physical phenomena in the defense,
        environmental, energy, and biological sciences."""
 
-    homepage = "https://computation-rnd.llnl.gov/linear_solvers/index.php"
-    url      = "https://computation-rnd.llnl.gov/linear_solvers/download/hypre-2.9.0b.tar.gz"
+    homepage = "https://computation.llnl.gov/project/linear_solvers/index.php"
+    url      = "https://computation.llnl.gov/project/linear_solvers/download/hypre-2.9.0b.tar.gz"
 
     version('2.9.0b', '87bce8469240dc775c6c622c5f68fa87')
     version('2.8.0b', '6b4db576c68d2072e48efbc00ea58489')
