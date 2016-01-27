@@ -1,4 +1,5 @@
 from spack import *
+import os
 
 class Hdf5(Package):
     """HDF5 is a data model, library, and file format for storing and managing
@@ -11,22 +12,94 @@ class Hdf5(Package):
     list_url = "http://www.hdfgroup.org/ftp/HDF5/releases"
     list_depth = 3
 
+    version('1.8.14', 'a482686e733514a51cde12d6fe5c5d95')
     version('1.8.13', 'c03426e9e77d7766944654280b467289')
 
-    depends_on("mpi")
-    depends_on("zlib")
+    # global variants (eventually need to be handled across all packages)
+    variant('dyn', default=False, description="+=static+dynamc libs; ~=only static")
+    variant('opt', default=True, description="+=optimized; ~=debug")
+    variant('langs', default=True, description="+=language API(s); ~=only default API")
 
-    # TODO: currently hard-coded to use OpenMPI
+    variant('reqdep', default=False, description='+=required dependent libs *only*; ~=See other xxxdep variants.')
+    variant('stddep', default=True, description='+=standard/Common dependent libs; ~=See other xxxdep variants.')
+    variant('alldep', default=False, description='+=all possible dependent libs; ~=See other xxxdep variants.')
+
+    # package specific variants
+    variant('mpiio', default=False, description="Enable MPI-IO support.")
+    variant('zlib', default=True, description="Enable zlib compression features.")
+    variant('szip', default=True, description="Enable SZip compression features.")
+
+    # required dependencies
+#    depends_on('mpi', when='+mpiio')
+#    depends_on('mpi', when='+stddep')
+#    depends_on('mpi', when='+alldep')
+
+    # optional dependencies
+    depends_on('zlib', when='+zlib')
+    depends_on('zlib', when='+stddep')
+    depends_on('zlib', when='+alldep')
+
+    depends_on('szip', when='+szip')
+    depends_on('szip', when='+stddep')
+    depends_on('szip', when='+alldep')
+
     def install(self, spec, prefix):
-        configure(
+        config_args = [
+            "CC=%s" % self.compiler.cc,
             "--prefix=%s" % prefix,
-            "--with-zlib=%s" % spec['zlib'].prefix,
-            "--enable-parallel",
-            "CC=%s" % spec['openmpi'].prefix.bin + "/mpicc",
-            "CXX=%s" % spec['openmpi'].prefix.bin + "/mpic++")
+            "--enable-static"
+        ]
 
-        make()
-        make("install")
+        if '+dyn' in spec:
+            config_args += ["--enable-shared"]
+        else:
+            config_args += ["--disable-shared"]
+
+        if '+opt' in spec:
+            config_args += ["--enable-production"]
+        else:
+            config_args += ["--enable-debug=all", "--enable-trace", "--enable-using-memchecker"]
+
+        if '+zlib' in spec or '+stddep' in spec or '+alldep' in spec:
+            config_args += ["--with-zlib=%s" % spec['zlib'].prefix]
+
+        if '+szip' in spec or '+stddep' in spec or '+alldep' in spec:
+            config_args += ["--with-szlib=%s" % spec['szip'].prefix]
+
+        if '+langs' in spec:
+            config_args += ["--enable-hl"]
+        else:
+            config_args += ["--disable-hl"]
+
+        # Note: use ~variant not -variant to test for negated variant in spec
+	#
+	# The compiler returned from Spack might contain the full compiler file path.
+	# We only want the basename so derive it, if necessary.
+	compiler_basename = os.path.basename(self.compiler.cc)
+        if '+mpiio' in spec:
+            config_args += ["--enable-parallel", "RUNPARALLEL=foo"]
+        elif compiler_basename.startswith("mpi"):
+            config_args += ["--enable-parallel", "RUNPARALLEL=foo"]
+
+	if 'xl' in compiler_basename:
+	    config_args += ["--enable-unsupported"]
+
+        # Enable fortran interface if we have a fortran compiler and
+        # fortran API isn't explicitly disabled
+        if self.compiler.fc and '+langs' in spec:
+            config_args += ["FC=%s" % self.compiler.fc,
+                            "--enable-fortran",
+                            "--enable-fortran2003"]
+
+        # Enable C++ interface if we have a C++ compiler and
+        # C++ API isn't explicitly disabled
+        if self.compiler.cxx and '+langs' in spec:
+            config_args += ["CXX=%s" % self.compiler.cxx,
+                            "--enable-cxx"]
+
+        configure(*config_args)
+
+        make("install-recursive")
 
     def url_for_version(self, version):
         v = str(version)

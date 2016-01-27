@@ -1,0 +1,80 @@
+diff -Nuar PSUADE_v1.7.4/CMakeLists.txt.orig PSUADE_v1.7.4/CMakeLists.txt
+--- PSUADE_v1.7.4/CMakeLists.txt.orig	2015-08-03 11:02:36.000000000 -0700
++++ PSUADE_v1.7.4/CMakeLists.txt	2015-10-27 13:55:22.000000000 -0700
+@@ -341,16 +341,19 @@
+ endif (USE_MARS)
+ 
+ #METIS
+-if(EXISTS "${PROJECT_SOURCE_DIR}/External/METIS")
+-  option (USE_METIS
+-        "Build and use the METIS library." ON)
+-endif() 
+-if (USE_METIS)
+-  include_directories ("${PROJECT_SOURCE_DIR}/External/METIS/Lib")
+-  add_subdirectory (External/METIS) 
+-  set (EXTRA_LIBS ${EXTRA_LIBS} metis)
+-  add_definitions(-DHAVE_METIS)
+-endif (USE_METIS)
++if (PSUADE_USE_METIS)
++    option (USE_METIS "Use METIS library." ON)
++    set (EXTRA_LIBS ${EXTRA_LIBS} "${PSUADE_USE_METIS}")
++    add_definitions(-DHAVE_METIS)
++else (PSUADE_USE_METIS)
++  if(EXISTS "${PROJECT_SOURCE_DIR}/External/METIS")
++    option (USE_METIS "Use METIS library." ON)
++    include_directories ("${PROJECT_SOURCE_DIR}/External/METIS/Lib")
++    add_subdirectory (External/METIS) 
++    set (EXTRA_LIBS ${EXTRA_LIBS} metis)
++    add_definitions(-DHAVE_METIS)
++  endif(EXISTS "${PROJECT_SOURCE_DIR}/External/METIS")
++endif (PSUADE_USE_METIS)
+ 
+ #MINPACK
+ if(EXISTS "${PROJECT_SOURCE_DIR}/External/MINPACK")
+@@ -446,24 +449,32 @@
+ #(Ordering is a little silly to get the link order right)
+ 
+ 
+-find_package(LAPACK)
+-if(LAPACK_FOUND AND NOT CMAKE_BUILD_TYPE MATCHES Release AND NOT MINGW)
+-  set (EXTRA_LIBS ${EXTRA_LIBS} ${LAPACK_LIBRARIES}) 
++if(PSUADE_USE_LAPACK)
++  set (EXTRA_LIBS ${EXTRA_LIBS} "${PSUADE_USE_LAPACK}") 
+ else()
+-  enable_language(Fortran)
+-  include_directories ("${PROJECT_SOURCE_DIR}/External/Lapack")
+-  add_subdirectory (External/Lapack) 
+-  set (EXTRA_LIBS ${EXTRA_LIBS} lapack)
++  find_package(LAPACK)
++  if(LAPACK_FOUND AND NOT CMAKE_BUILD_TYPE MATCHES Release AND NOT MINGW)
++    set (EXTRA_LIBS ${EXTRA_LIBS} ${LAPACK_LIBRARIES}) 
++  else()
++    enable_language(Fortran)
++    include_directories ("${PROJECT_SOURCE_DIR}/External/Lapack")
++    add_subdirectory (External/Lapack) 
++    set (EXTRA_LIBS ${EXTRA_LIBS} lapack)
++  endif()
+ endif()
+ 
+-find_package(BLAS)
+-if(BLAS_FOUND AND NOT CMAKE_BUILD_TYPE MATCHES Release AND NOT MINGW) #Build blas for windows and release
+-  set (EXTRA_LIBS ${EXTRA_LIBS} "${BLAS_LIBRARIES}") 
++if(PSUADE_USE_BLAS)
++  set (EXTRA_LIBS ${EXTRA_LIBS} "${PSUADE_USE_BLAS}") 
+ else()
+-  enable_language(Fortran)
+-  include_directories ("${PROJECT_SOURCE_DIR}/External/BLAS")
+-  add_subdirectory (External/BLAS) 
+-  set (EXTRA_LIBS ${EXTRA_LIBS} blas)
++  find_package(BLAS)
++  if(BLAS_FOUND AND NOT CMAKE_BUILD_TYPE MATCHES Release AND NOT MINGW) #Build blas for windows and release
++    set (EXTRA_LIBS ${EXTRA_LIBS} "${BLAS_LIBRARIES}") 
++  else()
++    enable_language(Fortran)
++    include_directories ("${PROJECT_SOURCE_DIR}/External/BLAS")
++    add_subdirectory (External/BLAS) 
++    set (EXTRA_LIBS ${EXTRA_LIBS} blas)
++  endif()
+ endif()
+ 
+ ###################################################

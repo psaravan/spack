@@ -38,9 +38,17 @@ class Mpich(Package):
     provides('mpi@:3', when='@3:')
     provides('mpi@:1', when='@1:')
 
+    def setup_dependent_environment(self, module, spec, dep_spec):
+        """For dependencies, make mpicc's use spack wrapper."""
+        os.environ['MPICH_CC']  = 'cc'
+        os.environ['MPICH_CXX'] = 'c++'
+        os.environ['MPICH_F77'] = 'f77'
+        os.environ['MPICH_F90'] = 'f90'
+
+
     def install(self, spec, prefix):
-        config_args = ["--prefix=" + prefix,
-                       "--enable-shared"]
+        config_args = ["--prefix=" + prefix]
+        #               "--enable-shared"] 
 
         # TODO: Spack should make it so that you can't actually find
         # these compilers if they're "disabled" for the current
@@ -50,6 +58,9 @@ class Mpich(Package):
 
         if not self.compiler.fc:
             config_args.append("--disable-fc")
+
+	config_args.append("--disable-shared")
+	config_args.append("--enable-static")
 
         configure(*config_args)
         make()
